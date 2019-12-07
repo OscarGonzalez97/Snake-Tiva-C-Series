@@ -1,71 +1,81 @@
 #include <stdio.h>
+#define FILAS 15
+#define COLUMNAS 15
+#define IZQUIERDA 90
+//Datos definidos por el programador
+struct serpiente {
+	char x;
+	char y;
+	char esCabeza;
+	char direccion;
+} typedef serpiente;
 
-//funcion
-void imprimeMenu(short int opcion){
-	if (opcion == 1) {
-		printf("\n...::BIENVENIDO A SNAKE::..\n--->1-Nueva Partida\n");
-		printf("2-Cargar Partida\n3-Borrar partida\n");
-		printf("4-Cambiar dificultad\n::");
+//Variables globales
+//el maximo tamanho que podria tener la serpiente es de este segun las FILAS y COLUMNAS
+//matriz que contendra los datos de la posicion de la serpiente
+serpiente snake [(FILAS-2)*(COLUMNAS-2)];
+char tablero [FILAS][COLUMNAS];
+int longitudSerpiente=3;
+
+//FUNCIONES
+//funcion para inicializar el tablero y la serpiente
+void cerar(void){
+	//primero inicializamos el tablero con las paredes
+	int i,j;
+	for(i=0;i<FILAS;i++){
+		for(j=0; j<COLUMNAS;j++){
+			if (i==0) 
+				tablero[i][j]='#';
+			else if (j==0)
+				tablero[i][j]='#';
+			else if(j==COLUMNAS-1)
+				tablero[i][j]='#';
+			else if (i==FILAS-1)
+				tablero[i][j]='#';
+			else
+				tablero[i][j]=' ';
+		}
 	}
-	else if (opcion == 2) {
-		printf("\n...::BIENVENIDO A SNAKE::..\n1-Nueva Partida\n");
-		printf("--->2-Cargar Partida\n3-Borrar partida\n");
-		printf("4-Cambiar dificultad\n::");
+	//ahora inicializamos la serpiente
+	for (i=0;i<(FILAS-2)*(COLUMNAS-2);i++){
+		snake[i].x=-1;
+		snake[i].y=-1;
+		snake[i].esCabeza=0;
+		snake[i].direccion=0;
 	}
-	else if (opcion == 3) {
-		printf("\n...::BIENVENIDO A SNAKE::..\n1-Nueva Partida\n");
-		printf("2-Cargar Partida\n--->3-Borrar partida\n");
-		printf("4-Cambiar dificultad\n::");
-	}
-	else if (opcion == 4) {
-		printf("\n...::BIENVENIDO A SNAKE::..\n1-Nueva Partida\n");
-		printf("2-Cargar Partida\n3-Borrar partida\n");
-		printf("--->4-Cambiar dificultad\n::");
-	}
-	else{
-		printf("\n...::BIENVENIDO A SNAKE::..\n1-Nueva Partida\n");
-		printf("2-Cargar Partida\n3-Borrar partida\n");
-		printf("4-Cambiar dificultad\n::");
+	//aca debemos poner la posicion inicial de la serpiente con longitud inicial 3
+	snake[0].x=6;
+	snake[0].y=6;
+	snake[0].esCabeza=1;
+	snake[0].direccion=IZQUIERDA;
+	snake[1].x=6;
+	snake[1].y=7;
+	snake[1].esCabeza=0;
+	snake[1].direccion=IZQUIERDA;
+	snake[2].x=6;
+	snake[2].y=8;
+	snake[2].esCabeza=0;
+	snake[2].direccion=IZQUIERDA;
+}
+void imprimirTablero(void){
+	int i,j;
+	for(i=0;i<FILAS;i++){
+		for(j=0; j<COLUMNAS;j++){
+			printf("%c",tablero[i][j]);
+		}
+		printf("\n");
 	}
 }
 
+int finJuego(void){
+	return 1;
+}
+
 int main (){
-	short int opcion;
-	opcion=1;
-	imprimeMenu (opcion);
-	char boton;
-	do{
-		boton=getchar();
-		putchar(boton);
-		while (getchar() != '\n');
-
-		switch(boton){
-			case 'w'://arriba
-				opcion--;
-				if (opcion == 0){
-					opcion=5;
-					imprimeMenu(opcion);
-				}
-				else
-					imprimeMenu(opcion);
-				break;
-			case 's'://abajo
-				opcion++;
-				if (opcion == 6){
-					opcion=1;
-					imprimeMenu(opcion);
-				}
-				else
-					imprimeMenu(opcion);
-				break;
-			case 'f': //enter
-				printf("\nSelecciono la opcion %i del menu", opcion);
-				//Sale del while
-				break;
-			default:
-				printf("\nERROR:Opcion no válida\n");
-		}
-
-	}while(opcion != 5);
+	cerar();
+	imprimirTablero();
+	while(!finJuego()){
+	
+	}
 	return 1;
 }
