@@ -1,12 +1,14 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "UART.h"
 #include "Systick.h"
 #include "int.h"
 #include "input.h"
+#include "SensorTemperatura.h"
 
 //CONSTANTES
-#define FILAS 15
-#define COLUMNAS 25
+#define FILAS 30
+#define COLUMNAS 30
 #define IZQUIERDA 7
 #define DERECHA 8
 #define ARRIBA 9
@@ -24,6 +26,7 @@ char opcion = 1;
 char opcionMenu;
 char teclaApretada;
 char empiezaJuego=0;
+int temperatura=0;
 
 struct serpiente {
 	char x;
@@ -40,23 +43,28 @@ char tablero [FILAS][COLUMNAS];
 int longitudSerpiente=3;
 char cola_x,cola_y;
 int murio=0;
-
+int input;
 
 //Funciones utilizadas
-void creaTablero(void);
-void imprimirTablero(void);
-void jugar(void);
-//char* mi_itoa(int num, char* str);
 void Timer2_Init(int seconds);
 void Timer1_Init(unsigned char freq);
-
+//FUNCIONES
+void swap(void);
+void mueve(void);
+void acomoda_cabeza(char movimiento);
+void crece(void);
+void crea_fruta(void);
+void cargaSerpienteEnTablero (void);
+void imprimirTablero(void);
 void DisableInterrupts(void); // Disable interrupts
 void EnableInterrupts(void);  // Enable interrupts
 void WaitForInterrupt(void);  // low power mode
+void cerar(void);
+int finJuego(void);
 
 void leeTecla(void){
 	uint8_t tecla;
-	tecla=(GPIOD->DATA << 1)+GPIOF->DATA;
+	tecla=((GPIOD->DATA & 0x03) << 1)+(GPIOF->DATA & 0x11);
 	
 	static uint32_t estado = ESTADO1;
 	static uint8_t teclaAnt = 0;
@@ -133,164 +141,25 @@ int main(void) {
   puertoD_init();
 	puertoF_init ();
 	Timer1_Init(100);//filtra tecla
-	Timer2_Init(10);
+	Timer2_Init(20);
+	//inicSysTickInt (80000);
+	TempSensorInit();
+	cerar();
+	crea_fruta();
 	EnableInterrupts();
 	
-	//int SW1,SWRight,SWLeft;
-
-	
+		
 		while(1)
 		{
 			WaitForInterrupt();
 		}
 		
-		//imprimeMenu();
-		//leeTecla();
-		
-		//opcion=UART_InChar();
-		
-		//UART_OutChar('\r');
-	  //UART_OutChar('\n');
-		
-		/**switch(opcion){
-			case 0x31:
-			DisableInterrupts();
-		
-			Timer1_Init(50);
-			Timer2_Init(1);							//imprime en pantalla el juego
-			inicSysTickInt (16000000);	//cuenta el tiempo que transcurre el juego
-			
-			EnableInterrupts();
-			
-			//creamos el tablero inicial
-			creaTablero();
-			while(1){
-				
-			//jugar();
-			}
-				
-				break;
-			case 50:
-				
-
-				break;
-			case 51:
-
-				break;
-			case 52:
-				
-				break;
-
-			case 48:
-				//Sale del while
-				break;
-			default:
-			    UART_OutString("\nERROR:Opcion no valida\n");
-		}**/
-		
-
-  return 0;
+		return 0;
 }
-
-/*
-* Funcion para jugar hasta que se pierda (por ahora sera infinito nunca perdera)
-*/
-void jugar(){
-
-	//while(1){
-		
-	//}
-}
-
-/*
-* Funcion que simplemente imprime el tablero
-*/
-void imprimirTablero (){
-	
-	UART_OutString("\033\143");
-	
-  int i,j;
-  for(i=0;i<FILAS;i++){
-    for(j=0; j<COLUMNAS;j++){
-	    UART_OutChar( tablero[i][j]);
-    }
-	UART_OutChar('\r');
-	UART_OutChar('\n');
-  }
-  UART_OutString("Tiempo en segundos: ");
-  UART_OutString(tiempoAscii);
-	UART_OutChar('\r');
-  UART_OutChar('\n');
-	
- 
-}
-
-/*
-* Funcion que simplemente crea el tablero del juego
-*/
-void creaTablero (){
-  int i,j;
-  for(i=0;i<FILAS;i++){
-    for(j=0; j<COLUMNAS;j++){
-      if (i==0) 
-          tablero[i][j]='#';
-      else if (j==0)
-        tablero[i][j]='#';
-      else if(j==COLUMNAS-1)
-        tablero[i][j]='#';
-      else if (i==FILAS-1)
-        tablero[i][j]='#';
-      else
-        tablero[i][j]=' ';
-    }
-  }
-}
-/**
-char* mi_itoa(int num, char* str){
-	
-	int i;
-	int sig = -1;
-	if(num<0){
-		num*=-1;
-		if(num<10){
-			str[0]='-'; str[1]='0'+num; str[2]=0; return str;
-		}else{
-			sig=1;
-		}
-	}
-	else if(num==0){
-		str[0]='0'; str[1]='0'; str[2]=0; return str;
-	} 
-	else{
-		if(num<10){
-			str[0]='0'; str[1]='0'+num; str[2]=0; return str;
-		}else{
-			sig=0;
-		}
-	}
-	if(sig!=-1){
-		int copia=num, m=1, cifras=1;
-		for(;copia>=10;copia/=10) cifras++;
-		for(int x=0;x<(cifras-1);x++) m*=10;
-		float v1=num;
-		int v2=0, v3=num;
-		if(sig) str[0]='-';
-		for(i=0; i<cifras; i++){//Descompone en factores
-			v1/=m;
-			v2=(int)v1*m;
-			v3-=v2;
-			m/=10;
-			str[i+sig]=48+(int)v1;
-			v1=v3;
-		} 
-		str[i+sig]=0;//Si str está a 0 no es necesario..
-	}
-	return str;
-}**/
 
 
 void SysTick_Handler () {
-	contadorTiempo++;
+	//contadorTiempo++;
 	//mi_itoa(contadorTiempo, tiempoAscii);
 }
 
@@ -299,40 +168,65 @@ void TIMER1A_Handler(void){
 	leeTecla();
 	//contadorTiempo++;
 	//mi_itoa(contadorTiempo, tiempoAscii);
-	
-
 }
 
 void TIMER2A_Handler(void){
 	TIMER2->ICR = 0x00000001;
   //imprimirTablero();
-		switch (teclaApretada){
-		case 0x2E: //switch 2, enter
+		if(empiezaJuego==0)
+		{
+	switch (teclaApretada){
+		case 0x16: //switch 2, enter
 			if (opcion==1){
 				empiezaJuego=1;
+				teclaApretada=0x17;
+				Timer2_Init(9);
 			}
 			break;
 			
-		case 0x1F://switch 1
+		case 0x07://switch 1
 			break;
 			
-		case 0x2D://boton izquierda, boton 3
+		case 0x15://boton izquierda, boton 3
+			
 			break;
 			
-		case 0x2B: //boton derecha, boton 4
-			opcion++;
-			if(opcion > 4)
-				opcion=1;
-			break;
+		case 0x13: //boton derecha, boton 4
+			if(!empiezaJuego){
+				opcion++;
+				if(opcion > 4)
+					opcion=1;
+				break;
+			}
+			else{
+				//presiona boton derecha
+			}
+			
 	
 		default:
 			break;
 			
 	}
-	teclaApretada=0;
 	imprimeMenu();
-	}
+	teclaApretada=0x17;
+}
+	else
+		{
+		
+		imprimirTablero();
 
+		//while(!finJuego()){
+		if(!murio){
+			//mueve
+			mueve();
+
+			//cargaSerpienteEnTablero
+			cargaSerpienteEnTablero();
+			//imprime
+			imprimirTablero();
+		}
+	}
+}
 
 void Timer1_Init(unsigned char freq){ 
 	
@@ -374,3 +268,322 @@ void Timer2_Init(int fps){
 }
 
 
+void cargaSerpienteEnTablero (void){
+	int i,j;
+	for(i=0;i<FILAS;i++){
+		for(j=0; j<COLUMNAS;j++){
+			if(tablero[i][j]!='f'){
+				if (i==0) 
+					tablero[i][j]='#';
+				else if (j==0)
+					tablero[i][j]='#';
+				else if(j==COLUMNAS-1)
+					tablero[i][j]='#';
+				else if (i==FILAS-1)
+					tablero[i][j]='#';
+				else
+					tablero[i][j]=' ';
+			}
+		}
+	}
+	//buscamos la serpiente y ponemos donde tiene que estar
+	for(i=0;i<longitudSerpiente;i++){
+		if (snake[i].x>=0){
+			if (i==0){
+				tablero[snake[i].x][snake[i].y]='*';
+			}
+			else
+				tablero[snake[i].x][snake[i].y]='s';
+		}
+	}
+}
+
+
+//funcion para inicializar el tablero y la serpiente
+void cerar(void){
+	//primero inicializamos el tablero con las paredes
+	int i,j;
+	for(i=0;i<FILAS;i++){
+		for(j=0; j<COLUMNAS;j++){
+			if (i==0) 
+				tablero[i][j]='#';
+			else if (j==0)
+				tablero[i][j]='#';
+			else if(j==COLUMNAS-1)
+				tablero[i][j]='#';
+			else if (i==FILAS-1)
+				tablero[i][j]='#';
+			else
+				tablero[i][j]=' ';
+		}
+	}
+	//ahora inicializamos la serpiente
+	for (i=0;i<(FILAS-2)*(COLUMNAS-2);i++){
+		snake[i].x=-1;
+		snake[i].y=-1;
+		snake[i].direccion=0;
+	}
+	//aca debemos poner la posicion inicial de la serpiente con longitud inicial 3
+	snake[0].x=7;
+	snake[0].y=7;
+	snake[0].direccion=IZQUIERDA;
+	snake[1].x=7;
+	snake[1].y=8;
+	snake[1].direccion=IZQUIERDA;
+	snake[2].x=7;
+	snake[2].y=9;
+	snake[2].direccion=IZQUIERDA;
+
+	cargaSerpienteEnTablero();
+
+}
+
+void imprimirTablero(void){
+	UART_OutString("\033\143");
+	int i,j;
+	for(i=0;i<FILAS;i++){
+		for(j=0; j<COLUMNAS;j++){
+			UART_OutChar( tablero[i][j]);
+		}
+		UART_OutChar('\r');
+		UART_OutChar('\n');
+	}
+	UART_OutChar('\r');
+	UART_OutChar('\n');
+	UART_OutString("Puntuacion actual======");
+	UART_OutUDec((longitudSerpiente-3)*10);
+	UART_OutChar('\r');
+	UART_OutChar('\n');
+	/**for(i=0;i<longitudSerpiente;i++){
+		printf("\nx: %d y: %d---- %d \n", snake[i].x,snake[i].y, snake[i].direccion);
+	}**/
+}
+
+void mueve(void){
+	char c;
+	c=teclaApretada;
+	if(c==0x15){ //valor de boton 3
+		acomoda_cabeza(IZQUIERDA);
+		teclaApretada=0x17;
+	}
+	else if (c==0x13){ //valor de boton 4
+		acomoda_cabeza(DERECHA);
+		teclaApretada=0x17;
+	}
+	else{
+		acomoda_cabeza(NADA);//UN CICLO Y NO PRESIONO NINGUN BOTON
+		teclaApretada=0x17;
+	}
+	
+}
+
+void acomoda_cabeza(char movimiento){
+	//Como solo hay 2 botones si la direccion es izquierda o derecha solo puede ir hacia arriba y hacia abajo
+	//Si la direccion es arriba o abajo solo puede ir a la izquierda o a la derecha
+	if (snake[0].direccion == IZQUIERDA){
+
+		if(movimiento==IZQUIERDA){ //va hacia abajo
+			swap();
+			//control de movimiento (para saber si avanza nomas, si comio algo o murio)
+			if(tablero[snake[0].x+1][snake[0].y]=='f'){ //come algo
+				longitudSerpiente++;
+				crece();
+			}
+			else if (tablero[snake[0].x+1][snake[0].y]=='s' || tablero[snake[0].x+1][snake[0].y]=='#'){//choca contra su cuerpo
+				murio=1; //muere 
+			}
+			snake[0].direccion=ABAJO;
+			snake[0].x++;
+		}
+		else if (movimiento==DERECHA){ //va hacia arriba
+			swap();
+			//control de movimiento (para saber si avanza nomas, si comio algo o murio)
+			if(tablero[snake[0].x-1][snake[0].y]=='f'){ //come algo
+				longitudSerpiente++;
+				crece();
+			}
+			else if (tablero[snake[0].x-1][snake[0].y]=='s' || tablero[snake[0].x-1][snake[0].y]=='#'){//choca contra su cuerpo
+				murio=1; //muere 
+			}
+			snake[0].direccion=ARRIBA;
+			snake[0].x--;
+		}
+		else{//solo avanza en ese ciclo
+			if(tablero[snake[0].x][snake[0].y-1]=='f'){ //come algo
+				longitudSerpiente++;
+				crece();
+			}
+			else if (tablero[snake[0].x][snake[0].y-1]=='s' || tablero[snake[0].x][snake[0].y-1]=='#'){//choca contra su cuerpo
+				murio=1; //muere 
+
+			}
+			swap();
+			snake[0].y--;
+		}
+
+	}
+	else if (snake[0].direccion == DERECHA){
+		if(movimiento==DERECHA){ //va hacia abajo
+			swap();
+			//control de movimiento (para saber si avanza nomas, si comio algo o murio)
+			if(tablero[snake[0].x+1][snake[0].y]=='f'){ //come algo
+				longitudSerpiente++;
+				crece();
+			}
+			else if (tablero[snake[0].x+1][snake[0].y]=='s' || tablero[snake[0].x+1][snake[0].y]=='#'){//choca contra su cuerpo
+				murio=1; //muere 
+			}
+			snake[0].direccion=ABAJO;
+			snake[0].x++;
+		}
+		else if (movimiento==IZQUIERDA){ //va hacia arriba
+			swap();
+			//control de movimiento (para saber si avanza nomas, si comio algo o murio)
+			if(tablero[snake[0].x-1][snake[0].y]=='f'){ //come algo
+				longitudSerpiente++;
+				crece();
+			}
+			else if (tablero[snake[0].x-1][snake[0].y]=='s' || tablero[snake[0].x-1][snake[0].y]=='#'){//choca contra su cuerpo
+				murio=1; //muere 
+			}
+			snake[0].direccion=ARRIBA;
+			snake[0].x--;
+		}
+		else{//avanza hacia la derecha
+			if(tablero[snake[0].x][snake[0].y+1]=='f'){ //come algo
+				longitudSerpiente++;
+				crece();
+			}
+			else if (tablero[snake[0].x][snake[0].y+1]=='s' || tablero[snake[0].x][snake[0].y+1]=='#'){//choca contra su cuerpo
+				murio=1; //muere 
+			}
+			swap();
+			snake[0].y++;
+		}
+	}
+	else if (snake[0].direccion == ARRIBA || snake[0].direccion == ABAJO){
+		if(movimiento==DERECHA){ //va hacia derecha
+			swap();
+			//control de movimiento (para saber si avanza nomas, si comio algo o murio)
+			if(tablero[snake[0].x][snake[0].y+1]=='f'){ //come algo
+				longitudSerpiente++;
+				crece();
+			}
+			else if (tablero[snake[0].x][snake[0].y+1]=='s' || tablero[snake[0].x][snake[0].y+1]=='#'){//choca contra su cuerpo
+				murio=1; //muere 
+			}
+			snake[0].direccion=DERECHA;
+			snake[0].y++;
+		}
+		else if (movimiento==IZQUIERDA){ //va hacia izquierda
+			swap();
+			//control de movimiento (para saber si avanza nomas, si comio algo o murio)
+			if(tablero[snake[0].x][snake[0].y-1]=='f'){ //come algo
+				longitudSerpiente++;
+				crece();
+			}
+			else if (tablero[snake[0].x][snake[0].y-1]=='s' || tablero[snake[0].x][snake[0].y-1]=='#'){//choca contra su cuerpo
+				murio=1; //muere 
+			}
+			snake[0].direccion=IZQUIERDA;
+			snake[0].y--;
+		}
+		else{//sigue
+			if(snake[0].direccion == ARRIBA){
+				if(tablero[snake[0].x-1][snake[0].y]=='f'){ //come algo
+					longitudSerpiente++;
+					crece();
+				}
+				else if (tablero[snake[0].x-1][snake[0].y]=='s' || tablero[snake[0].x-1][snake[0].y]=='#'){//choca contra su cuerpo
+					murio=1; //muere 
+				}
+				swap();
+				snake[0].x--;
+			}
+			else{
+				if(tablero[snake[0].x+1][snake[0].y]=='f'){ //come algo
+					longitudSerpiente++;
+					crece();
+				}
+				else if (tablero[snake[0].x+1][snake[0].y]=='s' || tablero[snake[0].x+1][snake[0].y]=='#'){//choca contra su cuerpo
+					murio=1; //muere 
+
+				}
+				swap();
+				snake[0].x++;
+			}
+		}
+	}
+	
+}
+
+void crece(void){
+	snake [longitudSerpiente-1].x=cola_x;
+	snake [longitudSerpiente-1].y=cola_y;
+	snake [longitudSerpiente-1].direccion=snake [longitudSerpiente-2].direccion;
+	crea_fruta();
+}
+
+//funcion que crea una frutita con el rand, en el tiva lograra esto con la funcion de temperatura
+void crea_fruta(void){
+	//crea una nueva frutita
+	int bandera=1;
+	int frutaX,frutaY;
+	while (bandera){
+		while((ADC0->RIS & 8) == 0) ;   				/* esperamos que termine la conversion */
+		temperatura = ADC0->SSFIFO3 & 0xFFF;  	//tomamos solo los 12 bits leido por el ADC
+		ADC0->ISC = 8;          								/* limpiamos la bandera*/
+		srand(temperatura);
+		frutaX=(rand()%(FILAS-2))+1;
+		frutaY=(rand()%(COLUMNAS-2))+1;
+		if(tablero[frutaX][frutaY]==' '){
+			bandera=0;
+			tablero[frutaX][frutaY]='f';
+		}
+	}
+}
+
+//Funcion que sirve para mover la serpiente en su lugar correctamente
+void swap(void){
+	int i;
+	char aux_x,aux_y,aux_direccion;
+	char aux_x2,aux_y2,aux_direccion2;
+
+	for (i=1;i<longitudSerpiente;i++){
+
+		if(i==longitudSerpiente-1){
+			cola_x=snake[i].x;
+			cola_y=snake[i].y;
+		}
+		if(i==1){
+			aux_direccion=snake[i].direccion;
+			aux_x=snake[i].x;
+			aux_y=snake[i].y;
+			snake[i].direccion=snake[i-1].direccion;
+			snake[i].x=snake[i-1].x;
+			snake[i].y=snake[i-1].y;
+		}
+		else if (i%2==0){
+			aux_direccion2=snake[i].direccion;
+			aux_x2=snake[i].x;
+			aux_y2=snake[i].y;
+			snake[i].direccion=aux_direccion;
+			snake[i].x=aux_x;
+			snake[i].y=aux_y;
+		}
+		else {
+			aux_direccion=snake[i].direccion;
+			aux_x=snake[i].x;
+			aux_y=snake[i].y;
+			snake[i].direccion=aux_direccion2;
+			snake[i].x=aux_x2;
+			snake[i].y=aux_y2;
+		}
+	}
+}
+
+int finJuego(void){
+	if(murio)
+		UART_OutString("\nHA Muerto!\n");	
+	return murio;
+}
