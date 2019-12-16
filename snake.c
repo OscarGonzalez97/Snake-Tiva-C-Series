@@ -27,6 +27,7 @@ char opcionMenu;
 char teclaApretada;
 char empiezaJuego=0;
 int temperatura=0;
+int tiempoVelocidad=9;
 
 struct serpiente {
 	char x;
@@ -76,12 +77,12 @@ void leeTecla(void){
 	static uint32_t estado = ESTADO1;
 	static uint8_t teclaAnt = 0;
 	
-//	// ejecutamos la m·quina de estados
+//	// ejecutamos la m√°quina de estados
 	
 	switch (estado) {
 		case ESTADO1:	// no hay tecla apretada
 			if (tecla) {
-				// una tecla se apretÛ por primera vez
+				// una tecla se apret√≥ por primera vez
 				teclaAnt = tecla;
 				estado = ESTADO2;
 			}
@@ -96,13 +97,13 @@ void leeTecla(void){
 				teclaAnt = 0;
 				estado = ESTADO1;
 			} else {
-				// se apretÛ otra tecla distinta, nos quedamos en este estado
+				// se apret√≥ otra tecla distinta, nos quedamos en este estado
 				teclaAnt = tecla;
 			}
 			break;
 		case ESTADO3:
 			if (tecla != teclaAnt) {
-				// se apretÛ otra tecla distinta o se soltÛ la tecla
+				// se apret√≥ otra tecla distinta o se solt√≥ la tecla
 				teclaAnt = tecla;
 				estado = ESTADO2;
 			} 
@@ -181,12 +182,12 @@ void TIMER2A_Handler(void){
 				if (opcion==1){
 					empiezaJuego=1;
 					teclaApretada=0x17;
-					Timer2_Init(9);
+					Timer2_Init(tiempoVelocidad);
 				}
 				else if (opcion==2){
 					//cargar partida anterior 
 					empiezaJuego=1;
-					Timer2_Init(9);
+					Timer2_Init(tiempoVelocidad);
 					cargaSerpienteGuardada();
 				}
 				else if (opcion==3){
@@ -376,7 +377,7 @@ void mueve(void){
 	if(c==0x15){ //valor de boton 3
 		if(empiezaJuego==2){ //izquierda y vuelve a jugar
 			empiezaJuego=1;
-			Timer2_Init(9);
+			Timer2_Init(tiempoVelocidad);
 			return;
 		}
 		else{
@@ -558,6 +559,10 @@ void crece(void){
 	snake [longitudSerpiente-1].y=cola_y;
 	snake [longitudSerpiente-1].direccion=snake [longitudSerpiente-2].direccion;
 	crea_fruta();
+	if(longitudSerpiente%5==0){
+		tiempoVelocidad++;
+		Timer2_Init(tiempoVelocidad);
+	}
 }
 
 //funcion que crea una frutita con el rand, en el tiva lograra esto con la funcion de temperatura
