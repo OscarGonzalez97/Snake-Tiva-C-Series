@@ -20,7 +20,7 @@
 
 //VARIABLES GLOBALES
 char tablero [FILAS][COLUMNAS];
-int contadorTiempo;
+int contadorTiempo=0;
 char tiempoAscii[11];
 char opcion = 1;
 char opcionMenu;
@@ -53,6 +53,7 @@ char cola_xGuardada,cola_yGuardada;
 //Funciones utilizadas
 void Timer2_Init(int seconds);
 void Timer1_Init(unsigned char freq);
+char* mi_itoa(int num, char* str);
 //FUNCIONES
 void swap(void);
 void mueve(void);
@@ -145,7 +146,7 @@ int main(void) {
 	puertoF_init ();
 	Timer1_Init(100);//filtra tecla
 	Timer2_Init(20);
-	//inicSysTickInt (80000);
+	inicSysTickInt (15999999);
 	TempSensorInit();
 	cerar();
 	crea_fruta();
@@ -162,15 +163,56 @@ int main(void) {
 
 
 void SysTick_Handler () {
-	//contadorTiempo++;
-	//mi_itoa(contadorTiempo, tiempoAscii);
+	contadorTiempo++;
+	mi_itoa(contadorTiempo, tiempoAscii);
+}
+
+char* mi_itoa(int num, char* str){
+	int i;
+	int sig = -1;
+	if(num<0){
+		num*=-1;
+		if(num<10){
+			str[0]='-'; str[1]='0'+num; str[2]=0; return str;
+		}else{
+			sig=1;
+		}
+	}
+	else if(num==0){
+		str[0]='0'; str[1]='0'; str[2]=0; return str;
+	} 
+	else{
+		if(num<10){
+			str[0]='0'; str[1]='0'+num; str[2]=0; return str;
+		}else{
+			sig=0;
+		}
+	}
+	if(sig!=-1){
+		int copia=num, m=1, cifras=1;
+		for(;copia>=10;copia/=10) cifras++;
+		for(int x=0;x<(cifras-1);x++) m*=10;
+		float v1=num;
+		int v2=0, v3=num;
+		if(sig) str[0]='-';
+		for(i=0; i<cifras; i++){//Descompone en factores
+			v1/=m;
+			v2=(int)v1*m;
+			v3-=v2;
+			m/=10;
+			str[i+sig]=48+(int)v1;
+			v1=v3;
+		} 
+		str[i+sig]=0;//Si str está a 0 no es necesario..
+	}
+	return str;
 }
 
 void TIMER1A_Handler(void){
 	TIMER1->ICR = 0x00000001;
 	leeTecla();
 	//contadorTiempo++;
-	//mi_itoa(contadorTiempo, tiempoAscii);
+	
 }
 
 void TIMER2A_Handler(void){
@@ -366,6 +408,11 @@ void imprimirTablero(void){
 	UART_OutUDec((longitudSerpiente-3)*10);
 	UART_OutChar('\r');
 	UART_OutChar('\n');
+	UART_OutString("Tiempo en segundos======");
+	UART_OutString(tiempoAscii);
+	UART_OutChar('\r');
+	UART_OutChar('\n');
+	//tiempo en segundos tiempoAscii
 	/**for(i=0;i<longitudSerpiente;i++){
 		printf("\nx: %d y: %d---- %d \n", snake[i].x,snake[i].y, snake[i].direccion);
 	}**/
