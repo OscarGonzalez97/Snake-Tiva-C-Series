@@ -7,6 +7,9 @@
 #include "SensorTemperatura.h"
 
 //CONSTANTES
+#define RED_LED   GPIO_PIN_1
+#define BLUE_LED  GPIO_PIN_2
+#define GREEN_LED GPIO_PIN_3
 #define FILAS 30
 #define COLUMNAS 30
 #define IZQUIERDA 7
@@ -28,6 +31,8 @@ char teclaApretada;
 char empiezaJuego=0;
 int temperatura=0;
 int tiempoVelocidad=9;
+int nivel;
+int nivelGuardado;
 
 struct serpiente {
 	char x;
@@ -210,9 +215,7 @@ char* mi_itoa(int num, char* str){
 
 void TIMER1A_Handler(void){
 	TIMER1->ICR = 0x00000001;
-	leeTecla();
-	//contadorTiempo++;
-	
+	leeTecla();	
 }
 
 void TIMER2A_Handler(void){
@@ -223,12 +226,13 @@ void TIMER2A_Handler(void){
 			case 0x16: //switch 2, enter
 				if (opcion==1){
 					empiezaJuego=1;
+					nivel=empiezaJuego;
 					teclaApretada=0x17;
 					Timer2_Init(tiempoVelocidad);
 				}
 				else if (opcion==2){
 					//cargar partida anterior 
-					empiezaJuego=1;
+					empiezaJuego=nivelGuardado;
 					Timer2_Init(tiempoVelocidad);
 					cargaSerpienteGuardada();
 				}
@@ -277,7 +281,7 @@ void TIMER2A_Handler(void){
 		}
 		else{
 			UART_OutString("HA MUERTO");
-			
+			//ranking de puntuaciones
 		}
 	}
 }
@@ -324,21 +328,79 @@ void Timer2_Init(int fps){
 
 void cargaSerpienteEnTablero (void){
 	int i,j;
-	for(i=0;i<FILAS;i++){
-		for(j=0; j<COLUMNAS;j++){
-			if(tablero[i][j]!='f'){
-				if (i==0) 
-					tablero[i][j]='#';
-				else if (j==0)
-					tablero[i][j]='#';
-				else if(j==COLUMNAS-1)
-					tablero[i][j]='#';
-				else if (i==FILAS-1)
-					tablero[i][j]='#';
-				else
-					tablero[i][j]=' ';
+	if(empiezaJuego==1){
+		for(i=0;i<FILAS;i++){
+			for(j=0; j<COLUMNAS;j++){
+				if(tablero[i][j]!='f'){
+					if (i==0) 
+						tablero[i][j]='#';
+					else if (j==0)
+						tablero[i][j]='#';
+					else if(j==COLUMNAS-1)
+						tablero[i][j]='#';
+					else if (i==FILAS-1)
+						tablero[i][j]='#';
+					else
+						tablero[i][j]=' ';
+				}
 			}
 		}
+	}
+	else if (empiezaJuego==3){ // dos obstaculos
+		for(i=0;i<FILAS;i++){
+			for(j=0; j<COLUMNAS;j++){
+				if(tablero[i][j]!='f'){
+					if (i==0) 
+						tablero[i][j]='#';
+					else if (j==0)
+						tablero[i][j]='#';
+					else if(j==COLUMNAS-1)
+						tablero[i][j]='#';
+					else if (i==FILAS-1)
+						tablero[i][j]='#';
+					else
+						tablero[i][j]=' ';
+				}
+			}
+		}
+		if (tablero[10][10]==' ')//ponemos fijo esto como nivel 2 si no hay serpiente alli
+			tablero[10][10]='#';
+		if (tablero[10][11]==' ')//ponemos fijo esto como nivel 2 si no hay serpiente alli
+			tablero[10][11]='#';
+		if (tablero[15][15]==' ')//ponemos fijo esto como nivel 2 si no hay serpiente alli
+			tablero[15][15]='#';
+		if (tablero[15][16]==' ')//ponemos fijo esto como nivel 2 si no hay serpiente alli
+			tablero[15][16]='#';
+	}
+	else if (empiezaJuego==4){
+		for(i=0;i<FILAS;i++){
+			for(j=0; j<COLUMNAS;j++){
+				if(tablero[i][j]!='f'){
+					if (i==0) 
+						tablero[i][j]='#';
+					else if (j==0)
+						tablero[i][j]='#';
+					else if(j==COLUMNAS-1)
+						tablero[i][j]='#';
+					else if (i==FILAS-1)
+						tablero[i][j]='#';
+					else
+						tablero[i][j]=' ';
+				}
+			}
+		}
+		if (tablero[10][10]==' ')//ponemos fijo esto como nivel 2 si no hay serpiente alli
+			tablero[10][10]='#';
+		if (tablero[10][11]==' ')//ponemos fijo esto como nivel 2 si no hay serpiente alli
+			tablero[10][11]='#';
+		if (tablero[15][15]==' ')//ponemos fijo esto como nivel 2 si no hay serpiente alli
+			tablero[15][15]='#';
+		if (tablero[15][16]==' ')//ponemos fijo esto como nivel 2 si no hay serpiente alli
+			tablero[15][16]='#';
+		if (tablero[13][13]==' ')//ponemos fijo esto como nivel 3 si no hay serpiente alli
+			tablero[13][13]='#';
+		if (tablero[9][9]==' ')//ponemos fijo esto como nivel 3 si no hay serpiente alli
+			tablero[9][9]='#';
 	}
 	//buscamos la serpiente y ponemos donde tiene que estar
 	for(i=0;i<longitudSerpiente;i++){
@@ -423,7 +485,7 @@ void mueve(void){
 	c=teclaApretada;
 	if(c==0x15){ //valor de boton 3
 		if(empiezaJuego==2){ //izquierda y vuelve a jugar
-			empiezaJuego=1;
+			empiezaJuego=nivel;
 			Timer2_Init(tiempoVelocidad);
 			return;
 		}
@@ -610,6 +672,14 @@ void crece(void){
 		tiempoVelocidad++;
 		Timer2_Init(tiempoVelocidad);
 	}
+	if(longitudSerpiente%7==0){ //avanza a nivel 2
+		empiezaJuego=3;
+		nivel=3;
+	}
+	if(longitudSerpiente%13==0){ //avanza a nivel 3
+		empiezaJuego=4;
+		nivel=4;
+	}
 }
 
 //funcion que crea una frutita con el rand, en el tiva lograra esto con la funcion de temperatura
@@ -699,6 +769,7 @@ void borrarGuardado(void){
 	
 	cola_xGuardada=7;
 	cola_yGuardada=9;
+	nivelGuardado=1;
 }
 
 void guardaSerpiente(void){
@@ -712,6 +783,7 @@ void guardaSerpiente(void){
 	cola_xGuardada=cola_x;
 	cola_yGuardada=cola_y;
 	longitudSerpienteGuardada=longitudSerpiente;
+	nivelGuardado=nivel;
 	
 }
 void cargaSerpienteGuardada(void){
@@ -725,4 +797,6 @@ void cargaSerpienteGuardada(void){
 	cola_x=cola_xGuardada;
 	cola_y=cola_yGuardada;
 	longitudSerpiente=longitudSerpienteGuardada;
+	nivel=nivelGuardado;
+
 }
