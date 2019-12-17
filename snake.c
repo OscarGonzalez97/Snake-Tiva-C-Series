@@ -33,6 +33,20 @@ int temperatura=0;
 int tiempoVelocidad=9;
 int nivel;
 int nivelGuardado;
+//para top 10
+char letra1;
+char letra2;
+char letra3;
+char letra4;
+char letraAModificar=1;
+
+struct ranking{
+  char letra1;
+  char letra2;
+  char letra3;
+  char letra4;
+  int puntos;
+} typedef ranking;
 
 struct serpiente {
 	char x;
@@ -45,6 +59,7 @@ struct serpiente {
 //el maximo tamanho que podria tener la serpiente es de este segun las FILAS y COLUMNAS
 //vector que contendra los datos de la posicion de la serpiente
 serpiente snake [(FILAS-2)*(COLUMNAS-2)];
+ranking top10[11];
 char tablero [FILAS][COLUMNAS];
 int longitudSerpiente=3;
 char cola_x,cola_y;
@@ -75,6 +90,10 @@ int finJuego(void);
 void borrarGuardado(void);
 void guardaSerpiente(void);
 void cargaSerpienteGuardada(void);
+void rankingMenu(void);
+void reiniciaRanking(void);
+void ordenarRanking(void);
+void printRanking(void);
 
 void leeTecla(void){
 	uint8_t tecla;
@@ -154,6 +173,7 @@ int main(void) {
 	inicSysTickInt (15999999);
 	TempSensorInit();
 	cerar();
+	reiniciaRanking();
 	crea_fruta();
 	EnableInterrupts();
 	
@@ -168,8 +188,10 @@ int main(void) {
 
 
 void SysTick_Handler () {
-	contadorTiempo++;
-	mi_itoa(contadorTiempo, tiempoAscii);
+	if(!murio && empiezaJuego!=2 && empiezaJuego != 0){
+		contadorTiempo++;
+		mi_itoa(contadorTiempo, tiempoAscii);
+	}
 }
 
 char* mi_itoa(int num, char* str){
@@ -264,6 +286,9 @@ void TIMER2A_Handler(void){
 		imprimeMenu();
 		teclaApretada=0x17;
 	}
+	else if(empiezaJuego==10 || empiezaJuego==11){ //ranking top 10
+		rankingMenu();
+	}
 	else{
 		if (empiezaJuego!=2)
 			imprimirTablero();
@@ -282,6 +307,17 @@ void TIMER2A_Handler(void){
 		else{
 			UART_OutString("HA MUERTO");
 			//ranking de puntuaciones
+			empiezaJuego=10; //abre parte de ranking 10
+			Timer2_Init(10);
+			letra1='a';
+			letra2='a';
+			letra3='a';
+			letra4='a';
+			UART_OutString("\n\rNavegue con las teclas del protoboard y presione el SW derecho del controlador para guardar\n\r");
+			UART_OutChar(letra1);
+			UART_OutChar(letra2);
+			UART_OutChar(letra3);
+			UART_OutChar(letra4);
 		}
 	}
 }
@@ -389,18 +425,22 @@ void cargaSerpienteEnTablero (void){
 				}
 			}
 		}
-		if (tablero[10][10]==' ')//ponemos fijo esto como nivel 2 si no hay serpiente alli
+		if (tablero[10][10]==' ')//ponemos fijo esto como nivel 3 si no hay serpiente alli
 			tablero[10][10]='#';
-		if (tablero[10][11]==' ')//ponemos fijo esto como nivel 2 si no hay serpiente alli
+		if (tablero[10][11]==' ')//ponemos fijo esto como nivel 3 si no hay serpiente alli
 			tablero[10][11]='#';
-		if (tablero[15][15]==' ')//ponemos fijo esto como nivel 2 si no hay serpiente alli
+		if (tablero[15][15]==' ')//ponemos fijo esto como nivel 3 si no hay serpiente alli
 			tablero[15][15]='#';
-		if (tablero[15][16]==' ')//ponemos fijo esto como nivel 2 si no hay serpiente alli
+		if (tablero[15][16]==' ')//ponemos fijo esto como nivel 3 si no hay serpiente alli
 			tablero[15][16]='#';
 		if (tablero[13][13]==' ')//ponemos fijo esto como nivel 3 si no hay serpiente alli
 			tablero[13][13]='#';
-		if (tablero[9][9]==' ')//ponemos fijo esto como nivel 3 si no hay serpiente alli
-			tablero[9][9]='#';
+		if (tablero[13][14]==' ')//ponemos fijo esto como nivel 3 si no hay serpiente alli
+			tablero[13][14]='#';
+		if (tablero[5][5]==' ')//ponemos fijo esto como nivel 3 si no hay serpiente alli
+			tablero[5][5]='#';
+		if (tablero[5][6]==' ')//ponemos fijo esto como nivel 3 si no hay serpiente alli
+			tablero[5][6]='#';
 	}
 	//buscamos la serpiente y ponemos donde tiene que estar
 	for(i=0;i<longitudSerpiente;i++){
@@ -800,3 +840,125 @@ void cargaSerpienteGuardada(void){
 	nivel=nivelGuardado;
 
 }
+
+void rankingMenu(void){
+	char c;
+	c=teclaApretada;
+	if(empiezaJuego==10){
+		if(c==0x15){ //valor de boton 3 cambia de letra
+			UART_OutString("\033\143");
+			UART_OutString("\n\rNavegue con las teclas del protoboard y presione el SW derecho del controlador para guardar\n\r");
+			if(letraAModificar==1){
+				letra1++;
+				if (letra1 == ('z'+1))
+					letra1='a';
+			}
+			else if (letraAModificar==2){
+				letra2++;
+				if (letra2 == ('z'+1))
+					letra2='a';
+			}
+			else if (letraAModificar==3){
+				letra3++;
+				if (letra3 == ('z'+1))
+					letra3='a';
+			}
+			else if (letraAModificar==4){
+				letra4++;
+				if (letra4 == ('z'+1))
+					letra4='a';
+			}
+			UART_OutChar(letra1);
+			UART_OutChar(letra2);
+			UART_OutChar(letra3);
+			UART_OutChar(letra4);
+		}
+		else if (c==0x13){ //valor de boton 4 avanza de letra
+			UART_OutString("\n\rNavegue con las teclas del protoboard y presione el SW derecho del controlador para guardar\n\r");
+			letraAModificar++;
+			if(letraAModificar==5){
+				letraAModificar=1;
+			}
+		}
+		else if(c==0x16){//SW derecha guarda y ordena
+			UART_OutString("\n\rNavegue con las teclas del protoboard y presione el SW derecho del controlador para guardar\n\r");
+			top10[0].letra1=letra1;
+			top10[0].letra2=letra2;
+			top10[0].letra3=letra3;
+			top10[0].letra4=letra4;
+			top10[0].puntos=(longitudSerpiente-3)*10;
+			ordenarRanking();
+			empiezaJuego=11;
+		}
+	}
+	if(empiezaJuego==11){
+		UART_OutString("\n\rPresione  para volver al menu principal\n\r");
+		printRanking();
+		if (c==0x07){//SW izquierda
+			empiezaJuego=0;
+			cerar();
+			murio=0;
+			crea_fruta();
+			longitudSerpiente=3;
+			contadorTiempo=0;
+			letraAModificar=1;
+		}
+	}
+}
+
+void ordenarRanking(void){
+  register int a,b;
+  char aux_letra1, aux_letra2, aux_letra3, aux_letra4;
+  int aux_puntos;
+
+	for(a=1;a<11;a++){
+		for(b=10;b>=a;b--){
+			if(top10[b-1].puntos>top10[b].puntos){	//En esta parte se controla con su vecino y luego hace el cambio
+
+				aux_letra1=top10[b].letra1;
+				aux_letra2=top10[b].letra2;
+				aux_letra3=top10[b].letra3;
+				aux_letra4=top10[b].letra4;
+				aux_puntos=top10[b].puntos;
+
+				top10[b].letra1=top10[b-1].letra1;
+				top10[b].letra2=top10[b-1].letra2;
+				top10[b].letra3=top10[b-1].letra3;
+				top10[b].letra4=top10[b-1].letra4;
+				top10[b].puntos=top10[b-1].puntos;
+
+				top10[b-1].letra1=aux_letra1;
+				top10[b-1].letra2=aux_letra2;
+				top10[b-1].letra3=aux_letra3;
+				top10[b-1].letra4=aux_letra4;
+				top10[b-1].puntos=aux_puntos;
+			}
+		}
+	}
+}
+void printRanking(void){
+	int i;
+	UART_OutString("\033\143");
+	UART_OutString("..::TOP 10 PLAYERS SNAKE TIVA :...");
+	UART_OutString("\n\r");
+	for (i=10;i>0;i--){
+		UART_OutChar(top10[i].letra1);
+		UART_OutChar(top10[i].letra2);
+		UART_OutChar(top10[i].letra3);
+		UART_OutChar(top10[i].letra4);
+		UART_OutString("----");
+		UART_OutUDec(top10[i].puntos);
+		UART_OutString("\r\n");
+	}
+}
+void reiniciaRanking(void){
+	int i;
+  for(i=0;i<11;i++){
+    top10[i].letra1='a';
+    top10[i].letra2='a';
+    top10[i].letra3='a';
+    top10[i].letra4='a';
+    top10[i].puntos=0;
+  }
+}
+
